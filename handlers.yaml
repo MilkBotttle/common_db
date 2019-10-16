@@ -31,6 +31,7 @@
   systemd:
     name: mariadb
     state: restarted
+  notify: Wait MariaDB
 
 - name: Restart haproxy
   systemd:

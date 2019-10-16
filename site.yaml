@@ -10,6 +10,7 @@
 - name: Setup MariaDB as standalone mode
   hosts: commondb
   gather_facts: no
+  become: true
   tasks:
     - name: Create temp repos
       copy:
@@ -26,14 +27,28 @@
           enabled=1
           gpgcheck=0
 
-#    - name: Remove old mariadb
-#      yum:
-#        name: [mariadb, mariadb-config, mariadb-common, mariadb-errmsg, mariadb-libs]
-#        state: absent
+    - name: Check old mariadb exist
+      yum:
+        list: installed
+      register: yum_installed
+
+    - name: Remove old mariadb (1/2)
+      yum:
+        name: "{{ item.name }}"
+        state: absent
+      when: item.version != '10.3.9'
+      with_items: "{{ yum_installed.results | selectattr('name','match', 'MariaDB') | list }}"
+
+    - name: Remove old mariadb (2/2)
+      yum:
+        name: "{{ item.name }}"
+        state: absent
+      when: item.version != '10.3.9'
+      with_items: "{{ yum_installed.results | selectattr('name','match', 'mariadb') | list }}"
 
     - name: Install MaraiDB
       yum:
-        name: [MariaDB, expect]
+        name: MariaDB
         enablerepo: commondb
 
     - name: Config MariaDB
@@ -43,8 +58,6 @@
         owner: mysql
         group: mysql
       when: not lookup('file', '.bootstraped') | bool
-      notify:
-        - Wait MariaDB
 
     - name: Create mariadb log path
       file:
@@ -56,7 +69,9 @@
     - name: Start mariadb
       systemd:
         name: mariadb
-        state: started
+        state: restarted
+      notify:
+        - Wait MariaDB
 
   handlers:
     - import_tasks: handlers.yaml
@@ -64,6 +79,7 @@
 - name: Init config standalone MariaDB
   hosts: commondb
   gather_facts: no
+  become: true
   handlers:
     - import_tasks: handlers.yaml
   tasks:
@@ -98,6 +114,7 @@
 - name: Config first node as Master MariaDB
   hosts: "{{ groups['commondb'][0] }}"
   gather_facts: no
+  become: true
   tasks:
     - block:
         - name : Stop first mariaDB for new cluster
@@ -124,17 +141,20 @@
     - name: Wsrep new cluster
       shell: |
         /etc/init.d/mysql start --wsrep-new-cluster
+        sleep 10
         service mysql start bootstrap
+      notify: Record cluster already bootstrap
 
     - name: Record cluster already bootstrap
       copy:
         content: "true"
-        path: .bootstraped
+        dest: .bootstraped
       delegate_to: localhost
 
 - name: Config other MariaDB nodes
   hosts: "{{ groups['commondb'][1:] }}"
   gather_facts: no
+  become: true
   handlers:
     - import_tasks: handlers.yaml
   tasks:
@@ -149,11 +169,11 @@
         group: mysql
       notify:
         - Restart MariaDB
-        - Wait MariaDB
 
 - name: Reconfig first MariaDB exit bootstrap mode
   hosts: "{{ groups['commondb'][0] }}"
   gather_facts: no
+  become: true
   handlers:
     - import_tasks: handlers.yaml
   tasks:
@@ -168,11 +188,11 @@
         group: mysql
       notify:
         - Restart MariaDB
-        - Wait MariaDB
 
 - name: Setup haproxy and keepalived
   hosts: commondb
   gather_facts: no
+  become: true
   handlers:
     - import_tasks: handlers.yaml
   tasks:
@@ -207,3 +227,13 @@
             dest: /etc/haproxy/haproxy.cfg
           notify: Restart haproxy
       when: groups['commondb'] | length > 1
+
+- name: Add user for access
+  hosts: commondb[0]
+  gather_facts: no
+  tasks:
+    - name: Create user commondb
+      shell: |
+        mysql -e "CREATE USER 'commondb'@'%' IDENTIFIED BY '{{ commondb_user_password }}';"
+        mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'commondb'@'%';"
+        mysql -e "FLUSH PRIVILEGES;"
