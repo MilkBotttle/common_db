@@ -1,0 +1,27 @@
+---
+- hosts: commondb
+  gather_facts: no
+  tasks:
+    - name: Stop all
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+      with_items: [mariadb, haproxy, keepalived]
+      ignore_errors: yes
+
+    - name: Remove all
+      yum:
+        name: [MariaDB, keepalived, haproxy]
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove all database data
+      shell: |
+        rm -rf /var/lib/mysql
+        rm -rf /etc/my.cnf
+        rm -f /root/.my.cnf
+    - name: rm bootstraped
+      file:
+        path: "{{ playbook_dir }}/.bootstraped"
+        state: absent
+        delegate_to: localhost

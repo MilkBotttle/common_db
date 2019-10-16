@@ -1,0 +1,43 @@
+---
+- name: Test DB
+  shell: |
+    mysql -e "show databases;"
+  register: testdb
+  failed_when: testdb.rc != 0
+
+- name: Wait MariaDB
+  wait_for:
+    host: "{{ ansible_host }}"
+    port: 3306
+    connect_timeout: 1
+    timeout: 60
+    search_regex: "MariaDB"
+  register: check_mariadb_port
+  until: check_mariadb_port is success
+  retries: 10
+  delay: 6
+
+- name: Stop MariaDB
+  systemd:
+    name: mariadb
+    state: stopped
+
+- name: Start MariaDB
+  systemd:
+    name: mariadb
+    state: started
+
+- name: Restart MariaDB
+  systemd:
+    name: mariadb
+    state: restarted
+
+- name: Restart haproxy
+  systemd:
+    name: haproxy
+    state: restarted
+
+- name: Restart keepalived
+  systemd:
+    name: keepalived
+    state: restarted
