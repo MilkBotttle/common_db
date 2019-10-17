@@ -20,8 +20,9 @@
         rm -rf /var/lib/mysql
         rm -rf /etc/my.cnf
         rm -f /root/.my.cnf
-    - name: rm bootstraped
+
+    - name: rm bootstraped at localhost
       file:
         path: "{{ playbook_dir }}/.bootstraped"
         state: absent
-        delegate_to: localhost
+      delegate_to: localhost
