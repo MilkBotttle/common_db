@@ -5,7 +5,7 @@ default-character-set = utf8
 default-character-set = utf8
 
 [mysqld]
-bind-address = {{ ansible_host }}
+bind-address = {{ mysql_address }}
 port = 3306
 log-error = /var/log/mariadb/mariadb.log
 lower_case_table_names = 1 
