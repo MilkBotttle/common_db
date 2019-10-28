@@ -244,4 +244,5 @@
       shell: |
         mysql -e "CREATE USER 'commondb'@'%' IDENTIFIED BY '{{ commondb_user_password }}';"
         mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'commondb'@'%';"
+        mysql -e "grant create user on *.* to commondb with grant option;"
         mysql -e "FLUSH PRIVILEGES;"
