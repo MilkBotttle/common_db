@@ -51,6 +51,14 @@
         name: MariaDB
         enablerepo: commondb
 
+    - name: Add mariadb openfile limit
+      blockinfile:
+        creat: yes
+        path: /etc/systemd/system/mariadb.service.d/override.conf
+        block: |
+          [Service]
+          LimitNOFILE=65535
+
     - name: Config MariaDB
       template:
         src: templates/my.j2.cnf
