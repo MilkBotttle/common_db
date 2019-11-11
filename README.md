@@ -60,3 +60,16 @@ Run: `ansible-playbook -i inventory destroy_all.yaml`
 * vip_interface: keepalived vip interface
 * commondb_user_password: a password for user commondb
 
+## Upgrade MariaDB
+1. Prepare a fresh CentOS machine with network
+2. Download the newer version MariaDB packages
+```
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash
+mkdir rpm; cd rpm 
+yum install --downloadonly --downloaddir=$PWD MariaDB
+```
+3. Copy the rpm folder to ansible playbook directory
+4. Run upgrade playbook 
+```
+ansible-playbook -i inventory upgrade.yaml
+```

@@ -1,0 +1,55 @@
+- name: Upgrade MariaDB
+  hosts: commondb
+  serial: 1
+  max_fail_percentage: 0
+  gather_facts: no
+  become: true
+  tasks:
+    - name: Stop MariaDB
+      systemd:
+        name: mariadb
+        state: stopped
+
+    - name: Remove old mariadb
+      yum:
+        name: MariaDB
+        state: absent
+
+    - name: Clean old repos
+      file:
+        path: /root/rpm
+        state: absent
+
+    - name: Create temp repos
+      copy:
+        src: rpm
+        dest: /root
+
+    - name: Create repofile
+      copy:
+        dest: /etc/yum.repos.d/commondb.repo
+        content: |
+          [commondb]
+          name=commondb
+          baseurl=file:///root/rpm
+          enabled=1
+          gpgcheck=0
+
+    - name: Install MaraiDB
+      yum:
+        name: MariaDB
+        enablerepo: commondb
+
+    - name: Add mariadb openfile limit
+      blockinfile:
+        creat: yes
+        path: /etc/systemd/system/mariadb.service.d/override.conf
+        block: |
+          [Service]
+          LimitNOFILE=65535
+
+    - name: Start mariadb
+      systemd:
+        name: mariadb
+        state: started
+
