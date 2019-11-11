@@ -1,11 +1,10 @@
-- name: Local init
-  hosts: localhost
+- hosts: localhost
   gather_facts: no
   tasks:
-    - name: Create file
-      file:
-        path: "{{ playbook_dir }}/.bootstraped"
-        state: touch
+    - name: Check bootstraped
+      stat:
+        path: '.bootstraped'
+      register: chk_bootstrap
 
 - name: Setup MariaDB as standalone mode
   hosts: commondb
@@ -53,7 +52,7 @@
 
     - name: Add mariadb openfile limit
       blockinfile:
-        creat: yes
+        create: yes
         path: /etc/systemd/system/mariadb.service.d/override.conf
         block: |
           [Service]
@@ -65,7 +64,8 @@
         dest: /etc/my.cnf
         owner: mysql
         group: mysql
-      when: not lookup('file', '.bootstraped') | bool
+      register: config_db
+      when: hostvars['localhost'].chk_bootstrap.stat.exists == false
 
     - name: Create mariadb log path
       file:
@@ -78,6 +78,7 @@
       systemd:
         name: mariadb
         state: restarted
+      when: config_db.changed
       notify:
         - Wait MariaDB
 
@@ -143,7 +144,14 @@
             - Wsrep new cluster
           when:
             - groups['commondb'] | length > 1
-      when: not lookup('file', '.bootstraped') | bool
+
+        - name: Create bootstraped file
+          file:
+            path: "{{ playbook_dir }}/.bootstraped"
+            state: touch
+          delegate_to: localhost
+          become: false
+      when: hostvars['localhost']['chk_bootstrap']['stat']['exists'] == False
 
   handlers:
     - name: Wsrep new cluster
@@ -177,6 +185,7 @@
         group: mysql
       notify:
         - Restart MariaDB
+      when: groups['commondb'] | length > 1
 
 - name: Reconfig first MariaDB exit bootstrap mode
   hosts: "{{ groups['commondb'][0] }}"
@@ -196,6 +205,7 @@
         group: mysql
       notify:
         - Restart MariaDB
+      when: groups['commondb'] | length > 1
 
 - name: Setup haproxy and keepalived
   hosts: commondb

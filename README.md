@@ -11,8 +11,8 @@ wget -O commondb_rpm.tgz 'http://172.20.0.22:8080/share.cgi?ssid=0XOlXwX&fid=0XO
 tar zxvf commondb_rpm.tgz
 ```
 
-## How to deploy single mariadb node 
-1. Wriete a inventory with vars and host. 
+## How to deploy single mariadb node
+1. Wriete a inventory with vars and host.
 > `mysql_address` is mysql bind address
 
 Example:
@@ -37,7 +37,7 @@ Example:
 ```
 [commondb]
 node2 ansible_host=192.168.0.214 mysql_address=192.168.0.214
-node1 ansible_host=192.168.0.98 mysql_address=192.168.0.98 
+node1 ansible_host=192.168.0.98 mysql_address=192.168.0.98
 node-master ansible_host=192.168.0.254 mysql_address=192.168.0.254
 
 [commondb:vars]
@@ -48,28 +48,33 @@ vip_interface=eth0
 ```
 And run `ansible-playbook -i inventory site.yaml`
 
-## Destroy deploy 
-> Note: This will remove installed rpm and clean all database database
+## Destroy deploy
+> Note: This will remove installed rpm and clean all database data
 
 Run: `ansible-playbook -i inventory destroy_all.yaml`
 
-## Variables in inventory 
+## Variables in inventory
 * ansible_host: ansible ssh address
-* mysql_address: mysql bind address 
+* mysql_address: mysql bind address
 * vip: keepalived create vip address
 * vip_interface: keepalived vip interface
 * commondb_user_password: a password for user commondb
 
 ## Upgrade MariaDB
-1. Prepare a fresh CentOS machine with network
-2. Download the newer version MariaDB packages
+1. Prepare a fresh CentOS machine with internal connection
+2. Download the newer version MariaDB packages from offcial site
 ```
 curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | sudo bash
-mkdir rpm; cd rpm 
-yum install --downloadonly --downloaddir=$PWD MariaDB
+mkdir rpm
+yum install --downloadonly --downloaddir=$PWD/rpm MariaDB
 ```
-3. Copy the rpm folder to ansible playbook directory
-4. Run upgrade playbook 
+3. Create repo for newer rpm
+```
+yum install -y yum-utils
+createrepo $PWD/rpm
+```
+4. Copy the rpm folder to ansible playbook directory
+5. Run upgrade playbook
 ```
 ansible-playbook -i inventory upgrade.yaml
 ```

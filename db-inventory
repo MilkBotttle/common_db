@@ -1,7 +1,5 @@
 [commondb]
-ocn2 ansible_host=192.168.24.10 ansible_ssh_user=centos mysql_address=192.168.24.10
-ocn3 ansible_host=192.168.24.20 ansible_ssh_user=centos mysql_address=192.168.24.20
-ocn4 ansible_host=192.168.24.30 ansible_ssh_user=centos mysql_address=192.168.24.30
+dbvm ansible_host=127.0.0.2 ansible_ssh_user=root ansible_ssh_port=2222 mysql_address=0.0.0.0
 
 [commondb:vars]
 mariadb_root_password=password

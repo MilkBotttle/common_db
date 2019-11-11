@@ -12,13 +12,16 @@
 
     - name: Remove old mariadb
       yum:
-        name: MariaDB
+        name: ["MariaDB", "galera"]
         state: absent
 
     - name: Clean old repos
       file:
         path: /root/rpm
         state: absent
+
+    - name: Clean cache
+      command: yum clean all
 
     - name: Create temp repos
       copy:
@@ -42,7 +45,7 @@
 
     - name: Add mariadb openfile limit
       blockinfile:
-        creat: yes
+        create: yes
         path: /etc/systemd/system/mariadb.service.d/override.conf
         block: |
           [Service]
@@ -57,4 +60,3 @@
       shell: |
         mysql_upgrade --skip-write-binlog
       become: true
-      when: inventory_hostname == groups['commondb'][0]

@@ -11,7 +11,7 @@
 
     - name: Remove all
       yum:
-        name: [MariaDB, keepalived, haproxy]
+        name: [MariaDB, keepalived, haproxy, galera]
         state: absent
       ignore_errors: yes
 
