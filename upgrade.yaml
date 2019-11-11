@@ -53,3 +53,8 @@
         name: mariadb
         state: started
 
+    - name: Upgrade Table
+      shell: |
+        mysql_upgrade --skip-write-binlog
+      become: true
+      when: inventory_hostname == groups['commondb'][0]
