@@ -59,4 +59,3 @@
     - name: Upgrade Table
       shell: |
         mysql_upgrade --skip-write-binlog
-      become: true
